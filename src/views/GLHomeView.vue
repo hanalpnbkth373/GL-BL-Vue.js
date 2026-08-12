@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { supabase } from '../supabase'
-import { Play, BookmarkPlus, X, Star, ChevronLeft, ChevronRight, Calendar, Clock, UserCircle, Video } from 'lucide-vue-next'
+import { Play, BookmarkPlus, X, Star, ChevronLeft, ChevronRight, Calendar, Clock, UserCircle, Video, Tv } from 'lucide-vue-next'
 
 const seriesList = ref([])
 const isLoading = ref(true)
@@ -270,12 +270,13 @@ const closeModal = () => {
             </span>
           </div>
           <p class="text-gray-300 text-sm md:text-base leading-relaxed mb-8">{{ selectedSeries.description }}</p>
+          
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/10 pt-6">
-            <!-- (ข้อมูลเชิงลึกคงเดิม) -->
             <div class="flex items-start gap-3"><Calendar class="w-5 h-5 text-gray-400 mt-0.5" /><div><p class="text-xs text-gray-500 font-medium">วันออนแอร์</p><p class="text-white text-sm">{{ selectedSeries.air_date }}</p></div></div>
             <div class="flex items-start gap-3"><Clock class="w-5 h-5 text-gray-400 mt-0.5" /><div><p class="text-xs text-gray-500 font-medium">เวลาออนแอร์</p><p class="text-white text-sm">{{ selectedSeries.air_time }}</p></div></div>
             <div class="flex items-start gap-3"><UserCircle class="w-5 h-5 text-gray-400 mt-0.5" /><div><p class="text-xs text-gray-500 font-medium">ผู้กำกับ</p><p class="text-white text-sm">{{ selectedSeries.director }}</p></div></div>
             <div class="flex items-start gap-3"><Video class="w-5 h-5 text-gray-400 mt-0.5" /><div><p class="text-xs text-gray-500 font-medium">ลิงก์ต้นฉบับ</p><a :href="selectedSeries.trailer_url" target="_blank" class="text-[#00e054] hover:underline text-sm truncate block max-w-[200px]">รับชมบน YouTube</a></div></div>
+            <div class="flex items-start gap-3"><Tv class="w-5 h-5 text-gray-400 mt-0.5" /><div><p class="text-xs text-gray-500 font-medium">ช่องทางการรับชม</p><p class="text-white text-sm">{{ selectedSeries.watch_platform || 'ไม่ระบุ' }}</p></div></div>
           </div>
         </div>
       </div>

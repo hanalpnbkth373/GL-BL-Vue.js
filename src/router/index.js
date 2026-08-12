@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import GLHomeView from '../views/GLHomeView.vue'
 import BLHomeView from '../views/BLHomeView.vue'
 import LoginView from '../views/LoginView.vue'
+import PrivacyView from '../views/PrivacyView.vue' 
+import LicenseView from '../views/LicenseView.vue'
 
 // Admin Views
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
@@ -17,6 +19,8 @@ const router = createRouter({
     { path: '/', name: 'gl-home', component: GLHomeView },
     { path: '/bl', name: 'bl-home', component: BLHomeView },
     { path: '/login', name: 'login', component: LoginView },
+    { path: '/privacy', name: 'privacy', component: PrivacyView },
+    { path: '/license', name: 'license', component: LicenseView },
     
     // Admin Routes
     { path: '/admin/dashboard', name: 'admin-dashboard', component: AdminDashboard },

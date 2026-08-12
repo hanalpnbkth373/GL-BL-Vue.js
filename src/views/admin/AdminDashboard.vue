@@ -1,38 +1,35 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
-import { Film, Users, FileText, Activity, Clock } from 'lucide-vue-next'
+import { Film, Users, FileText, Activity, Clock, BarChart3 } from 'lucide-vue-next'
 
-const stats = ref({
-  series: 0,
-  users: 0,
-  logs: 0
-})
-
+const stats = ref({ series: 0, users: 0, logs: 0 })
+const glCount = ref(0)
+const blCount = ref(0)
 const recentLogs = ref([])
 const isLoading = ref(true)
 
+const glPercent = computed(() => stats.value.series === 0 ? 0 : Math.round((glCount.value / stats.value.series) * 100))
+const blPercent = computed(() => stats.value.series === 0 ? 0 : Math.round((blCount.value / stats.value.series) * 100))
+
 onMounted(async () => {
   try {
-    // นับจำนวน Series
-    const { count: seriesCount } = await supabase.from('series').select('*', { count: 'exact', head: true })
-    stats.value.series = seriesCount || 0
+    const { count: sCount } = await supabase.from('series').select('*', { count: 'exact', head: true })
+    stats.value.series = sCount || 0
 
-    // นับจำนวน Profiles
-    const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
-    stats.value.users = usersCount || 0
+    const { count: uCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
+    stats.value.users = uCount || 0
 
-    // นับจำนวน Logs
-    const { count: logsCount } = await supabase.from('logs').select('*', { count: 'exact', head: true })
-    stats.value.logs = logsCount || 0
+    const { count: lCount } = await supabase.from('logs').select('*', { count: 'exact', head: true })
+    stats.value.logs = lCount || 0
 
-    // ดึง Log 5 อันล่าสุด
-    const { data: logsData } = await supabase
-      .from('logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5)
-      
+    // นับแยก GL / BL ทำกราฟ
+    const { count: glC } = await supabase.from('series').select('*', { count: 'exact', head: true }).eq('type', 'GL')
+    glCount.value = glC || 0
+    const { count: blC } = await supabase.from('series').select('*', { count: 'exact', head: true }).eq('type', 'BL')
+    blCount.value = blC || 0
+
+    const { data: logsData } = await supabase.from('logs').select('*').order('created_at', { ascending: false }).limit(5)
     if (logsData) recentLogs.value = logsData
 
   } catch (error) {
@@ -43,94 +40,124 @@ onMounted(async () => {
 })
 
 const formatDate = (isoString) => {
-  return new Date(isoString).toLocaleString('th-TH', { 
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-  })
+  return new Date(isoString).toLocaleString('th-TH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 </script>
 
 <template>
-  <div class="animate__animated animate__fadeIn">
+  <div class="animate__animated animate__fadeIn max-w-7xl mx-auto overflow-hidden">
     
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-white mb-2">ภาพรวมระบบ (Overview)</h1>
-      <p class="text-gray-400">ยินดีต้อนรับเข้าสู่ระบบจัดการ GL & BL Showtime</p>
+      <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">ภาพรวมระบบ (Overview)</h1>
+      <p class="text-gray-400 text-sm sm:text-base">ยินดีต้อนรับเข้าสู่ระบบจัดการ GL & BL Showtime</p>
     </div>
     
-    <!-- Stats Cards (Liquid Glass) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-      <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
-        <div class="absolute -right-6 -top-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+      <div class="glass-card p-6 rounded-2xl relative overflow-hidden group border border-emerald-500/20">
+        <div class="absolute -right-6 -top-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl transition-all"></div>
         <div class="flex items-center justify-between relative z-10">
           <div>
             <p class="text-gray-400 text-sm mb-1 font-medium">ซีรีส์ในระบบ</p>
-            <h2 class="text-4xl font-extrabold text-white">{{ stats.series }} <span class="text-base font-normal text-gray-500">เรื่อง</span></h2>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white">{{ stats.series }} <span class="text-sm font-normal text-gray-500">เรื่อง</span></h2>
           </div>
-          <div class="w-14 h-14 bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/30 rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-            <Film class="w-7 h-7 text-emerald-400" />
+          <div class="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+            <Film class="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400" />
           </div>
         </div>
       </div>
 
-      <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
-        <div class="absolute -right-6 -top-6 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all"></div>
+      <div class="glass-card p-6 rounded-2xl relative overflow-hidden group border border-cyan-500/20">
+        <div class="absolute -right-6 -top-6 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl transition-all"></div>
         <div class="flex items-center justify-between relative z-10">
           <div>
             <p class="text-gray-400 text-sm mb-1 font-medium">ผู้ใช้งานทั้งหมด</p>
-            <h2 class="text-4xl font-extrabold text-white">{{ stats.users }} <span class="text-base font-normal text-gray-500">บัญชี</span></h2>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white">{{ stats.users }} <span class="text-sm font-normal text-gray-500">บัญชี</span></h2>
           </div>
-          <div class="w-14 h-14 bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/30 rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.1)]">
-            <Users class="w-7 h-7 text-cyan-400" />
+          <div class="w-12 h-12 sm:w-14 sm:h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center">
+            <Users class="w-6 h-6 sm:w-7 sm:h-7 text-cyan-400" />
           </div>
         </div>
       </div>
 
-      <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
-        <div class="absolute -right-6 -top-6 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+      <div class="glass-card p-6 rounded-2xl relative overflow-hidden group border border-purple-500/20 sm:col-span-2 lg:col-span-1">
+        <div class="absolute -right-6 -top-6 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl transition-all"></div>
         <div class="flex items-center justify-between relative z-10">
           <div>
             <p class="text-gray-400 text-sm mb-1 font-medium">บันทึกระบบ (Logs)</p>
-            <h2 class="text-4xl font-extrabold text-white">{{ stats.logs }} <span class="text-base font-normal text-gray-500">รายการ</span></h2>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white">{{ stats.logs }} <span class="text-sm font-normal text-gray-500">รายการ</span></h2>
           </div>
-          <div class="w-14 h-14 bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/30 rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.1)]">
-            <FileText class="w-7 h-7 text-purple-400" />
+          <div class="w-12 h-12 sm:w-14 sm:h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center">
+            <FileText class="w-6 h-6 sm:w-7 sm:h-7 text-purple-400" />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Recent Activity Section -->
-    <div class="glass-card rounded-2xl p-6">
-      <div class="flex items-center gap-3 mb-6">
-        <div class="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center">
-          <Activity class="w-5 h-5 text-gray-300" />
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      
+      <!-- Custom Chart: สัดส่วนซีรีส์ -->
+      <div class="glass-card rounded-2xl p-6 lg:col-span-1 border border-white/5 flex flex-col">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center">
+            <BarChart3 class="w-5 h-5 text-gray-300" />
+          </div>
+          <h2 class="text-lg font-bold text-white">สัดส่วนคอนเทนต์</h2>
         </div>
-        <h2 class="text-xl font-bold text-white">ความเคลื่อนไหวล่าสุด</h2>
-      </div>
-
-      <div v-if="isLoading" class="py-8 text-center text-gray-500">
-        กำลังโหลดประวัติ...
-      </div>
-      <div v-else-if="recentLogs.length === 0" class="py-8 text-center text-gray-500">
-        ยังไม่มีความเคลื่อนไหวในระบบ
-      </div>
-      <div v-else class="space-y-4">
-        <!-- ลูปแสดงประวัติแบบ List -->
-        <div v-for="log in recentLogs" :key="log.id" class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5 hover:border-white/10 transition-colors gap-4">
-          <div class="flex items-start gap-4">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 mt-2 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
-            <div>
-              <p class="text-white text-sm font-medium">{{ log.details }}</p>
-              <p class="text-gray-500 text-xs mt-1">โดย: <span class="text-emerald-400">{{ log.user_email }}</span></p>
+        
+        <div v-if="!isLoading" class="flex-grow flex flex-col justify-center gap-6">
+          <!-- แท่ง Progress Bar -->
+          <div class="w-full h-6 bg-gray-800 rounded-full overflow-hidden flex shadow-inner">
+            <div :style="`width: ${glPercent}%`" class="h-full bg-pink-500 transition-all duration-1000 ease-out flex items-center justify-center text-[10px] font-bold text-white overflow-hidden">
+              <span v-if="glPercent > 10">{{ glPercent }}%</span>
+            </div>
+            <div :style="`width: ${blPercent}%`" class="h-full bg-blue-500 transition-all duration-1000 ease-out flex items-center justify-center text-[10px] font-bold text-white overflow-hidden">
+              <span v-if="blPercent > 10">{{ blPercent }}%</span>
             </div>
           </div>
-          <div class="flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap bg-gray-900/50 px-3 py-1.5 rounded-lg border border-gray-800">
-            <Clock class="w-3.5 h-3.5" />
-            {{ formatDate(log.created_at) }}
+          
+          <div class="flex justify-between items-center text-sm">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-pink-500"></span>
+              <span class="text-gray-300">GL Series ({{ glCount }})</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+              <span class="text-gray-300">BL Series ({{ blCount }})</span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="flex-grow flex items-center justify-center text-gray-500 text-sm">กำลังโหลดกราฟ...</div>
+      </div>
+
+      <!-- Recent Activity Section -->
+      <div class="glass-card rounded-2xl p-6 lg:col-span-2 border border-white/5">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center">
+            <Activity class="w-5 h-5 text-gray-300" />
+          </div>
+          <h2 class="text-lg font-bold text-white">ความเคลื่อนไหวล่าสุด</h2>
+        </div>
+
+        <div v-if="isLoading" class="py-8 text-center text-gray-500 text-sm">กำลังโหลดประวัติ...</div>
+        <div v-else-if="recentLogs.length === 0" class="py-8 text-center text-gray-500 text-sm">ยังไม่มีความเคลื่อนไหวในระบบ</div>
+        
+        <div v-else class="space-y-3">
+          <div v-for="log in recentLogs" :key="log.id" class="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-black/30 rounded-xl border border-white/5 hover:border-white/10 transition-colors gap-2 sm:gap-4">
+            <div class="flex items-start gap-3">
+              <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0"></div>
+              <div>
+                <p class="text-white text-sm font-medium line-clamp-1">{{ log.details }}</p>
+                <p class="text-gray-500 text-[11px] mt-0.5">โดย: <span class="text-emerald-400">{{ log.user_email }}</span></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] text-gray-400 whitespace-nowrap bg-gray-900/50 px-2 py-1 rounded-lg border border-gray-800 self-start sm:self-auto">
+              <Clock class="w-3 h-3" /> {{ formatDate(log.created_at) }}
+            </div>
           </div>
         </div>
       </div>
+
     </div>
-    
   </div>
 </template>
