@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GL Showtime</title>
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="GL Showtime" />
+    <meta property="og:description" content="แพลตฟอร์มจัดการบริการและข้อมูลที่ทันสมัย" />
+    <meta property="og:image" content="https://gl-showtime.vercel.app/og-image.jpg" />
+    <meta property="og:url" content="https://gl-showtime.vercel.app/" />
+    <meta property="og:type" content="website" />
+
+    <!-- Google Fonts (Kanit) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Priority Hints (สำหรับภาพ Hero Banner) -->
+    <link rel="preload" fetchpriority="high" as="image" href="/hero-bg.jpg" type="image/jpeg">
+
+    <style>
+      body { font-family: 'Kanit', sans-serif; }
+    </style>
+  </head>
+  <body class="bg-slate-950 text-slate-100 antialiased overflow-x-hidden">
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
