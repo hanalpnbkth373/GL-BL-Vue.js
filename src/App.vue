@@ -21,7 +21,7 @@ const checkAdminRole = async (userId) => {
       .from('profiles')
       .select('role')
       .eq('id', userId)
-      .single()
+      .maybeSingle() // <--- เปลี่ยนจาก .single() เป็น .maybeSingle()
       
     if (data && data.role === 'Admin') {
       isAdmin.value = true
@@ -82,9 +82,11 @@ const closeSidebar = () => {
             <RouterLink to="/bl" exact-active-class="text-blue-400 font-bold" class="hover:text-blue-400 transition-colors">BL Home</RouterLink>
             <RouterLink to="/privacy" exact-active-class="text-white font-bold" class="hover:text-white transition-colors">Privacy Policy</RouterLink>
             <RouterLink to="/license" exact-active-class="text-white font-bold" class="hover:text-white transition-colors">License Agreement</RouterLink>
+            <RouterLink v-if="currentUser" to="/my-list" exact-active-class="text-[#00e054] font-bold" class="hover:text-[#00e054] transition-colors">รายการของฉัน</RouterLink>
           </nav>
         </div>
 
+        <!-- เมนูฝั่งขวา -->
         <div class="flex items-center gap-4">
           <template v-if="currentUser">
             <div class="flex items-center gap-3">
@@ -92,14 +94,19 @@ const closeSidebar = () => {
                 <LayoutDashboard class="w-4 h-4" />
                 <span class="hidden sm:inline">จัดการหลังบ้าน</span>
               </RouterLink>
-              <button @click="handleLogout" class="flex items-center gap-2 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-300 px-4 py-2 rounded-full transition-all text-sm">
+              
+              <RouterLink to="/profile" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-full border border-white/10 transition-all text-sm group">
+                <User class="w-4 h-4 text-gray-400 group-hover:text-[#00e054] transition-colors" />
+                <span class="hidden sm:inline">ตั้งค่าโปรไฟล์</span>
+              </RouterLink>
+
+              <button @click="handleLogout" class="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-300 rounded-full transition-all" title="ออกจากระบบ">
                 <LogOut class="w-4 h-4" />
-                <span class="hidden sm:inline">ออกจากระบบ</span>
               </button>
             </div>
           </template>
           <template v-else>
-            <RouterLink to="/login" class="flex items-center gap-2 bg-pink-600 hover:bg-pink-500 text-white px-6 py-2.5 rounded-full font-bold transition-all shadow-[0_0_15px_rgba(219,39,119,0.4)]">
+            <RouterLink to="/login" class="flex items-center gap-2 bg-[#00e054] hover:bg-[#00c54f] text-black px-6 py-2.5 rounded-full font-bold transition-all shadow-[0_0_15px_rgba(0,224,84,0.4)]">
               <User class="w-4 h-4" />
               <span>เข้าสู่ระบบ</span>
             </RouterLink>
