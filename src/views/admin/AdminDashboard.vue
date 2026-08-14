@@ -1,20 +1,27 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
-import { Film, Users, FileText, Activity, Clock, BarChart3, Trophy, Bookmark } from 'lucide-vue-next'
+import { Film, Users, FileText, Activity, Clock, BarChart3, Trophy, Bookmark, Wrench } from 'lucide-vue-next'
 
 const stats = ref({ series: 0, users: 0, logs: 0 })
 const glCount = ref(0)
 const blCount = ref(0)
 const recentLogs = ref([])
-const topSeries = ref([]) // เก็บซีรีส์ยอดฮิต
+const topSeries = ref([]) 
 const isLoading = ref(true)
+
+// State สำหรับเปิด-ปิดเว็บ
+const isMaintenance = ref(false)
 
 const glPercent = computed(() => stats.value.series === 0 ? 0 : Math.round((glCount.value / stats.value.series) * 100))
 const blPercent = computed(() => stats.value.series === 0 ? 0 : Math.round((blCount.value / stats.value.series) * 100))
 
 onMounted(async () => {
   try {
+    // โหลดสถานะ Maintenance
+    const { data: setObj } = await supabase.from('settings').select('is_maintenance').eq('id', 1).maybeSingle()
+    if (setObj) isMaintenance.value = setObj.is_maintenance
+
     const { count: sCount } = await supabase.from('series').select('*', { count: 'exact', head: true })
     stats.value.series = sCount || 0
 
@@ -32,7 +39,6 @@ onMounted(async () => {
     const { data: logsData } = await supabase.from('logs').select('*').order('created_at', { ascending: false }).limit(5)
     if (logsData) recentLogs.value = logsData
 
-    // ดึงข้อมูลและคำนวณกราฟ Top Bookmarks
     const { data: bms } = await supabase.from('bookmarks').select('series_id, series(title)')
     if (bms) {
       const counts = {}
@@ -42,7 +48,6 @@ onMounted(async () => {
         if (!counts[id]) counts[id] = { title: b.series.title, count: 0 }
         counts[id].count++
       })
-      // เรียงลำดับจากมากไปน้อย เอาแค่ 5 อันดับแรก
       topSeries.value = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5)
     }
 
@@ -53,11 +58,20 @@ onMounted(async () => {
   }
 })
 
+const toggleMaintenance = async () => {
+  const confirmMsg = !isMaintenance.value 
+    ? 'แน่ใจหรือไม่? หากเปิดโหมดนี้ ผู้ใช้งานทั้งหมดจะไม่สามารถเข้าเว็บได้' 
+    : 'ต้องการเปิดระบบให้ผู้ใช้งานเข้าถึงปกติใช่หรือไม่?'
+  if (!confirm(confirmMsg)) return
+  
+  isMaintenance.value = !isMaintenance.value
+  await supabase.from('settings').upsert({ id: 1, is_maintenance: isMaintenance.value })
+}
+
 const formatDate = (isoString) => {
   return new Date(isoString).toLocaleString('th-TH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-// หาค่า Max ของ Bookmark เพื่อทำสเกลกราฟ
 const maxBookmark = computed(() => {
   return topSeries.value.length ? Math.max(...topSeries.value.map(s => s.count)) : 1
 })
@@ -66,9 +80,25 @@ const maxBookmark = computed(() => {
 <template>
   <div class="animate__animated animate__fadeIn max-w-7xl mx-auto overflow-hidden">
     
-    <div class="mb-8">
+    <div class="mb-6">
       <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">ภาพรวมระบบ (Overview)</h1>
       <p class="text-gray-400 text-sm sm:text-base">ยินดีต้อนรับเข้าสู่ระบบจัดการ GL & BL Showtime</p>
+    </div>
+
+    <!-- ปุ่มเปิด/ปิด โหมดปรับปรุงระบบ -->
+    <div class="mb-8 p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors bg-black/40" :class="isMaintenance ? 'border-yellow-500/50' : 'border-white/5'">
+      <div class="flex items-center gap-4">
+        <div :class="['w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0', isMaintenance ? 'bg-yellow-500/20 text-yellow-500' : 'bg-gray-800 text-gray-400']">
+          <Wrench class="w-6 h-6" />
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">โหมดปิดปรับปรุงระบบ (Maintenance)</h2>
+          <p class="text-sm text-gray-400">{{ isMaintenance ? 'เปิดใช้งานอยู่ - คนนอกเข้าเว็บไม่ได้' : 'ปิดใช้งาน - ระบบทำงานปกติ' }}</p>
+        </div>
+      </div>
+      <button @click="toggleMaintenance" :class="['px-6 py-2.5 rounded-xl font-bold transition-all w-full sm:w-auto', isMaintenance ? 'bg-yellow-500 text-black' : 'bg-gray-800 text-white hover:bg-gray-700']">
+        {{ isMaintenance ? 'ปิดโหมดปรับปรุง' : 'เปิดโหมดปรับปรุง' }}
+      </button>
     </div>
     
     <!-- Stats Cards -->
@@ -98,7 +128,6 @@ const maxBookmark = computed(() => {
 
     <!-- Charts Area -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-      
       <!-- สัดส่วนคอนเทนต์ -->
       <div class="glass-card rounded-2xl p-6 border border-white/5 flex flex-col">
         <div class="flex items-center gap-3 mb-6">
@@ -117,7 +146,7 @@ const maxBookmark = computed(() => {
         </div>
       </div>
 
-      <!-- กราฟซีรีส์ยอดฮิต (Top Bookmarked) -->
+      <!-- กราฟซีรีส์ยอดฮิต -->
       <div class="glass-card rounded-2xl p-6 lg:col-span-2 border border-white/5 flex flex-col">
         <div class="flex items-center gap-3 mb-6">
           <div class="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center border border-yellow-500/20"><Trophy class="w-5 h-5 text-yellow-400" /></div>

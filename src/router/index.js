@@ -7,6 +7,8 @@ import PrivacyView from '../views/PrivacyView.vue'
 import LicenseView from '../views/LicenseView.vue'
 import MyListView from '../views/MyListView.vue'
 import UserProfileView from '../views/UserProfileView.vue'
+import ForgotPasswordView from '../views/ForgotPasswordView.vue'
+import ResetPasswordView from '../views/ResetPasswordView.vue'
 
 // Admin Views
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
@@ -19,17 +21,18 @@ import AddUsersView from '../views/admin/AddUsersView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // หน้าของคนดูทั่วไป
     { path: '/', name: 'gl-home', component: GLHomeView },
     { path: '/bl', name: 'bl-home', component: BLHomeView },
     { path: '/login', name: 'login', component: LoginView },
     { path: '/register', name: 'register', component: RegisterView },
+    { path: '/forgot-password', name: 'forgot-password', component: ForgotPasswordView },
+    { path: '/reset-password', name: 'reset-password', component: ResetPasswordView },
     { path: '/privacy', name: 'privacy', component: PrivacyView },
     { path: '/license', name: 'license', component: LicenseView },
     { path: '/my-list', name: 'my-list', component: MyListView },
     { path: '/profile', name: 'user-profile', component: UserProfileView },
     
-    // หน้าของ Admin
+    // Admin Routes
     { path: '/admin/dashboard', name: 'admin-dashboard', component: AdminDashboard },
     { path: '/admin/add-series', name: 'admin-add-series', component: AddSeriesView },
     { path: '/admin/manage-series', name: 'admin-manage-series', component: ManageSeriesView },

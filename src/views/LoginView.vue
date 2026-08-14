@@ -22,7 +22,6 @@ const handleLogin = async () => {
 
     if (error) throw error
 
-    // เช็ค Role ว่าเป็น Admin หรือไม่ โดยใช้ .maybeSingle() เพื่อป้องกัน Error 406
     const { data: profileData } = await supabase
       .from('profiles')
       .select('role')
@@ -36,8 +35,8 @@ const handleLogin = async () => {
     }
     
   } catch (error) {
-   console.error("Supabase Login Error:", error.message)
-    errorMessage.value = `Error: ${error.message}` 
+    console.error("Supabase Login Error:", error.message)
+    errorMessage.value = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'
   } finally {
     isLoading.value = false
   }
@@ -47,7 +46,6 @@ const handleLogin = async () => {
 <template>
   <div class="min-h-screen flex items-center justify-center bg-[#050505] p-4 relative overflow-hidden font-sans">
     
-    <!-- Background Effects -->
     <div class="absolute top-1/4 right-1/4 w-96 h-96 bg-[#00e054]/20 rounded-full blur-[100px] pointer-events-none"></div>
     <div class="absolute bottom-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
@@ -65,19 +63,18 @@ const handleLogin = async () => {
         <div class="space-y-1.5">
           <label class="text-sm font-medium text-gray-300 ml-1">อีเมล</label>
           <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Mail class="w-5 h-5 text-gray-500" />
-            </div>
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Mail class="w-5 h-5 text-gray-500" /></div>
             <input v-model="email" type="email" required placeholder="youremail@example.com" class="w-full pl-11 pr-4 py-3 bg-black/50 border border-gray-700 rounded-xl text-white focus:border-[#00e054] outline-none transition-colors">
           </div>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-sm font-medium text-gray-300 ml-1">รหัสผ่าน</label>
+          <div class="flex items-center justify-between ml-1">
+            <label class="text-sm font-medium text-gray-300">รหัสผ่าน</label>
+            <RouterLink to="/forgot-password" class="text-xs text-[#00e054] hover:underline">ลืมรหัสผ่าน?</RouterLink>
+          </div>
           <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Lock class="w-5 h-5 text-gray-500" />
-            </div>
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Lock class="w-5 h-5 text-gray-500" /></div>
             <input v-model="password" type="password" required placeholder="••••••••" class="w-full pl-11 pr-4 py-3 bg-black/50 border border-gray-700 rounded-xl text-white focus:border-[#00e054] outline-none transition-colors">
           </div>
         </div>
@@ -101,15 +98,10 @@ const handleLogin = async () => {
           </button>
         </div>
       </div>
-
     </div>
   </div>
 </template>
 
 <style scoped>
-.glass-card {
-  background: rgba(10, 10, 10, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
+.glass-card { background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 </style>

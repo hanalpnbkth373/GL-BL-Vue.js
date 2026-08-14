@@ -1,7 +1,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../supabase'
-import { Search, Loader2, Shield, ShieldAlert, Ban, CheckCircle, Trash2, Users, Mail, Clock } from 'lucide-vue-next'
+// เพิ่ม ChevronLeft และ ChevronRight เข้ามาในบรรทัดนี้แล้วครับ
+import { Search, Loader2, Shield, ShieldAlert, Ban, CheckCircle, Trash2, Users, Mail, Clock, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 
 const profilesList = ref([])
 const isLoading = ref(true)
@@ -240,19 +241,16 @@ const formatDate = (isoString) => {
               </td>
               <td class="p-4 text-center">
                 <div class="flex items-center justify-center gap-2">
-                  <!-- ปุ่มสลับ Admin/User -->
                   <button @click="toggleRole(item)" class="px-3 py-1.5 bg-gray-800 hover:bg-purple-500/20 text-gray-400 hover:text-purple-400 rounded-md transition-colors text-xs font-medium flex items-center gap-1" title="สลับสิทธิ์การใช้งาน">
                     <Shield class="w-3.5 h-3.5" /> {{ item.role === 'Admin' ? 'ลดเป็น User' : 'ตั้งเป็น Admin' }}
                   </button>
                   
-                  <!-- ปุ่ม Ban / Unban -->
                   <button @click="toggleBan(item)" :class="['px-3 py-1.5 bg-gray-800 rounded-md transition-colors text-xs font-medium flex items-center gap-1', item.status === 'Active' ? 'hover:bg-yellow-500/20 text-gray-400 hover:text-yellow-500' : 'hover:bg-[#00e054]/20 text-gray-400 hover:text-[#00e054]']">
                     <Ban v-if="item.status === 'Active'" class="w-3.5 h-3.5" />
                     <CheckCircle v-else class="w-3.5 h-3.5" />
                     {{ item.status === 'Active' ? 'ระงับใช้งาน' : 'ปลดบล็อก' }}
                   </button>
 
-                  <!-- ปุ่มลบ -->
                   <button @click="handleDelete(item)" class="p-1.5 bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-md transition-colors" title="ลบผู้ใช้">
                     <Trash2 class="w-4 h-4" />
                   </button>

@@ -23,19 +23,21 @@ onMounted(async () => {
     if (session) {
       currentUser.value = session.user
       
-      // ดึงข้อมูลจากตาราง profiles
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
-        .single()
+        .maybeSingle()
         
       if (error) throw error
+      
       if (profileData) {
         profileForm.value.display_name = profileData.display_name || ''
         profileForm.value.avatar_url = profileData.avatar_url || ''
         role.value = profileData.role || 'User'
-        joinDate.value = new Date(profileData.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+        joinDate.value = profileData.created_at ? new Date(profileData.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'ไม่ระบุ'
+      } else {
+        joinDate.value = 'เพิ่งเข้าร่วม'
       }
     }
   } catch (error) {
@@ -54,13 +56,20 @@ const showNotification = (message, type = 'success') => {
 const handleUpdateProfile = async () => {
   isSavingProfile.value = true
   try {
+    // หั่นเอาชื่อจาก email มาทำเป็น username เพื่อกันบั๊ก Not Null
+    const autoUsername = currentUser.value.email.split('@')[0]
+
     const { error } = await supabase
       .from('profiles')
-      .update({ 
+      .upsert({ 
+        id: currentUser.value.id,
+        email: currentUser.value.email,
+        username: autoUsername, // <--- เพิ่มบรรทัดนี้เพื่อส่งให้ DB มันพอใจ
         display_name: profileForm.value.display_name,
-        avatar_url: profileForm.value.avatar_url
-      })
-      .eq('id', currentUser.value.id)
+        avatar_url: profileForm.value.avatar_url,
+        role: role.value,
+        status: 'Active'
+      }, { onConflict: 'id' })
 
     if (error) throw error
     showNotification('บันทึกข้อมูลโปรไฟล์สำเร็จ!')

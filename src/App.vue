@@ -2,9 +2,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { 
-  User, LayoutDashboard, Film, ListVideo, FileText, Users, UserPlus, LogOut, Menu, X 
+  User, LayoutDashboard, Film, ListVideo, FileText, Users, UserPlus, LogOut, Menu, X, Globe, Wrench 
 } from 'lucide-vue-next'
 import { supabase } from './supabase'
+import { currentLang, t } from './store' // ดึงระบบ 2 ภาษามาใช้
 
 const route = useRoute()
 const router = useRouter()
@@ -13,39 +14,47 @@ const currentUser = ref(null)
 const isAdmin = ref(false)
 const isSidebarOpen = ref(false)
 
+// State สำหรับ Maintenance Mode
+const isMaintenance = ref(false)
+const isCheckingSystem = ref(true)
+
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
-const checkAdminRole = async (userId) => {
+const checkSystemAndUser = async () => {
   try {
-    const { data } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .maybeSingle() // <--- เปลี่ยนจาก .single() เป็น .maybeSingle()
-      
-    if (data && data.role === 'Admin') {
-      isAdmin.value = true
+    // 1. เช็คสถานะโหมดปิดปรับปรุง
+    const { data: settings } = await supabase.from('settings').select('is_maintenance').eq('id', 1).maybeSingle()
+    if (settings) {
+      isMaintenance.value = settings.is_maintenance
+    }
+
+    // 2. เช็ค User & Role
+    const { data: { session } } = await supabase.auth.getSession()
+    currentUser.value = session?.user || null
+
+    if (currentUser.value) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', currentUser.value.id)
+        .maybeSingle()
+        
+      isAdmin.value = profileData?.role === 'Admin'
     } else {
       isAdmin.value = false
     }
   } catch (error) {
-    console.error('Error checking role:', error)
+    console.error('System check error:', error)
+  } finally {
+    isCheckingSystem.value = false
   }
 }
 
 onMounted(() => {
-  supabase.auth.getSession().then(({ data }) => {
-    currentUser.value = data.session?.user || null
-    if (currentUser.value) checkAdminRole(currentUser.value.id)
-  })
+  checkSystemAndUser()
 
   supabase.auth.onAuthStateChange((_event, session) => {
-    currentUser.value = session?.user || null
-    if (currentUser.value) {
-      checkAdminRole(currentUser.value.id)
-    } else {
-      isAdmin.value = false
-    }
+    checkSystemAndUser()
   })
 })
 
@@ -57,17 +66,33 @@ const handleLogout = async () => {
   router.push('/')
 }
 
-const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value
-}
+const toggleSidebar = () => { isSidebarOpen.value = !isSidebarOpen.value }
+const closeSidebar = () => { isSidebarOpen.value = false }
 
-const closeSidebar = () => {
-  isSidebarOpen.value = false
+// ฟังก์ชันสลับภาษา
+const toggleLang = () => {
+  currentLang.value = currentLang.value === 'th' ? 'en' : 'th'
 }
 </script>
 
 <template>
-  <div class="min-h-screen relative font-sans text-slate-100 bg-[#050505] flex">
+  <!-- หน้าจอ Loading ตอนกำลังเช็คระบบ -->
+  <div v-if="isCheckingSystem" class="min-h-screen bg-[#050505] flex items-center justify-center text-[#00e054]">
+    กำลังโหลดข้อมูลระบบ...
+  </div>
+  
+  <!-- หน้าจอโหมดปิดปรับปรุง (ซ่อนจาก Admin เพื่อให้ Admin ยังเข้ามาทำงานได้) -->
+  <div v-else-if="isMaintenance && !isAdmin" class="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-center p-6 relative overflow-hidden font-sans">
+    <div class="absolute inset-0 bg-yellow-500/10 blur-[150px] pointer-events-none"></div>
+    <Wrench class="w-20 h-20 text-yellow-500 mb-6 animate-bounce" />
+    <h1 class="text-4xl font-extrabold text-white mb-4">ระบบกำลังปิดปรับปรุง</h1>
+    <p class="text-gray-400 max-w-md leading-relaxed">ทีมงานกำลังอัปเดตระบบเพื่อให้ใช้งานได้ดียิ่งขึ้น กรุณากลับมาใหม่ในภายหลัง ขออภัยในความไม่สะดวกครับ</p>
+    <button @click="checkSystemAndUser" class="mt-8 px-6 py-2.5 rounded-full border border-gray-700 text-gray-300 hover:text-white hover:bg-white/10 transition-all font-medium">
+      โหลดหน้าเว็บใหม่
+    </button>
+  </div>
+
+  <div v-else class="min-h-screen relative font-sans text-slate-100 bg-[#050505] flex">
     
     <!-- ================= PUBLIC NAVBAR ================= -->
     <header v-if="!isAdminRoute" class="fixed top-0 left-0 w-full z-50 glass-nav h-20 flex items-center transition-all duration-300">
@@ -80,24 +105,29 @@ const closeSidebar = () => {
           <nav class="hidden lg:flex items-center gap-6 text-sm font-medium text-gray-300">
             <RouterLink to="/" exact-active-class="text-pink-400 font-bold" class="hover:text-pink-400 transition-colors">GL Home</RouterLink>
             <RouterLink to="/bl" exact-active-class="text-blue-400 font-bold" class="hover:text-blue-400 transition-colors">BL Home</RouterLink>
-            <RouterLink to="/privacy" exact-active-class="text-white font-bold" class="hover:text-white transition-colors">Privacy Policy</RouterLink>
-            <RouterLink to="/license" exact-active-class="text-white font-bold" class="hover:text-white transition-colors">License Agreement</RouterLink>
-            <RouterLink v-if="currentUser" to="/my-list" exact-active-class="text-[#00e054] font-bold" class="hover:text-[#00e054] transition-colors">รายการของฉัน</RouterLink>
+            <RouterLink to="/privacy" exact-active-class="text-white font-bold" class="hover:text-white transition-colors">{{ t('นโยบายส่วนบุคคล', 'Privacy Policy') }}</RouterLink>
+            <RouterLink to="/license" exact-active-class="text-white font-bold" class="hover:text-white transition-colors">{{ t('ข้อตกลง', 'License') }}</RouterLink>
+            <RouterLink v-if="currentUser" to="/my-list" exact-active-class="text-[#00e054] font-bold" class="hover:text-[#00e054] transition-colors">{{ t('รายการของฉัน', 'My List') }}</RouterLink>
           </nav>
         </div>
 
         <!-- เมนูฝั่งขวา -->
         <div class="flex items-center gap-4">
+          <!-- ปุ่มสลับภาษา -->
+          <button @click="toggleLang" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-300 transition-all">
+            <Globe class="w-3.5 h-3.5" /> {{ currentLang === 'th' ? 'EN' : 'TH' }}
+          </button>
+
           <template v-if="currentUser">
             <div class="flex items-center gap-3">
               <RouterLink v-if="isAdmin" to="/admin/dashboard" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-full font-medium transition-all text-sm shadow-[0_0_10px_rgba(16,185,129,0.3)]">
                 <LayoutDashboard class="w-4 h-4" />
-                <span class="hidden sm:inline">จัดการหลังบ้าน</span>
+                <span class="hidden sm:inline">{{ t('จัดการหลังบ้าน', 'Admin Panel') }}</span>
               </RouterLink>
               
               <RouterLink to="/profile" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-full border border-white/10 transition-all text-sm group">
                 <User class="w-4 h-4 text-gray-400 group-hover:text-[#00e054] transition-colors" />
-                <span class="hidden sm:inline">ตั้งค่าโปรไฟล์</span>
+                <span class="hidden sm:inline">{{ t('ตั้งค่าโปรไฟล์', 'Profile') }}</span>
               </RouterLink>
 
               <button @click="handleLogout" class="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-300 rounded-full transition-all" title="ออกจากระบบ">
@@ -108,7 +138,7 @@ const closeSidebar = () => {
           <template v-else>
             <RouterLink to="/login" class="flex items-center gap-2 bg-[#00e054] hover:bg-[#00c54f] text-black px-6 py-2.5 rounded-full font-bold transition-all shadow-[0_0_15px_rgba(0,224,84,0.4)]">
               <User class="w-4 h-4" />
-              <span>เข้าสู่ระบบ</span>
+              <span>{{ t('เข้าสู่ระบบ', 'Login') }}</span>
             </RouterLink>
           </template>
         </div>
