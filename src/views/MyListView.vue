@@ -1,8 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '../supabase'
-import { Play, Calendar, Star, BookmarkMinus } from 'lucide-vue-next'
+import { Play, Star, BookmarkMinus, Loader2 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import { t } from '../store' // ดึงระบบ 2 ภาษามาใช้
 
 const router = useRouter()
 const savedSeries = ref([])
@@ -21,7 +22,6 @@ onMounted(async () => {
 
 const fetchBookmarks = async () => {
   try {
-    // ดึง ID ของซีรีส์ที่บันทึกไว้
     const { data: bms, error: bmError } = await supabase.from('bookmarks').select('series_id').eq('user_id', currentUser.value.id)
     if (bmError) throw bmError
 
@@ -51,7 +51,7 @@ const getThumbnail = (url) => {
 }
 
 const removeBookmark = async (seriesId) => {
-  if(!confirm('ลบออกจากรายการของฉัน?')) return
+  if(!confirm(t('ยืนยันการลบออกจากรายการของฉัน?', 'Are you sure you want to remove this from your list?'))) return
   await supabase.from('bookmarks').delete().match({ user_id: currentUser.value.id, series_id: seriesId })
   savedSeries.value = savedSeries.value.filter(s => s.id !== seriesId)
 }
@@ -60,13 +60,18 @@ const removeBookmark = async (seriesId) => {
 <template>
   <div class="min-h-screen bg-[#050505] pt-28 pb-20 px-6 md:px-12 font-sans animate__animated animate__fadeIn">
     <div class="max-w-7xl mx-auto">
-      <h1 class="text-3xl md:text-4xl font-bold text-white mb-8 border-l-4 border-[#00e054] pl-4">รายการของฉัน (My List)</h1>
+      <h1 class="text-3xl md:text-4xl font-bold text-white mb-8 border-l-4 border-[#00e054] pl-4">{{ t('รายการของฉัน (My List)', 'My List') }}</h1>
       
-      <div v-if="isLoading" class="text-center text-[#00e054] py-20">กำลังโหลดรายการโปรด...</div>
-      <div v-else-if="savedSeries.length === 0" class="text-center text-gray-500 py-20 bg-white/5 rounded-2xl border border-white/10">
-        ยังไม่มีซีรีส์ในรายการของฉัน<br><span class="text-sm mt-2 block">ไปกดบันทึกเรื่องที่ชอบจากหน้า Home ได้เลย!</span>
+      <div v-if="isLoading" class="text-center text-[#00e054] py-20 flex flex-col items-center gap-3">
+        <Loader2 class="w-8 h-8 animate-spin" />
+        <span>{{ t('กำลังโหลดข้อมูล...', 'Loading...') }}</span>
       </div>
-
+      
+      <div v-else-if="savedSeries.length === 0" class="text-center text-gray-500 py-20 bg-white/5 rounded-2xl border border-white/10">
+        {{ t('คุณยังไม่ได้บันทึกซีรีส์เรื่องใดเลย', 'You haven\'t saved any series yet.') }}
+        <br><span class="text-sm mt-2 block">{{ t('กลับไปดูซีรีส์ที่หน้า Home แล้วกดปุ่มบุ๊กมาร์กได้เลย!', 'Go back to Home and click the bookmark button!') }}</span>
+      </div>
+      
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
         <div v-for="item in savedSeries" :key="item.id" class="relative rounded-lg overflow-hidden group border border-white/5 hover:border-[#00e054]/50 transition-all duration-300 bg-[#0a0a0a]">
           <div class="aspect-video relative bg-gray-900 rounded-t-lg overflow-hidden">
@@ -75,7 +80,7 @@ const removeBookmark = async (seriesId) => {
               <a :href="item.trailer_url" target="_blank" class="w-10 h-10 bg-[#00e054] rounded-full flex items-center justify-center hover:scale-110 transition-transform">
                 <Play class="w-4 h-4 text-black fill-black ml-0.5" />
               </a>
-              <button @click="removeBookmark(item.id)" class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform" title="ลบออก">
+              <button @click="removeBookmark(item.id)" class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform" :title="t('ลบออกจากรายการ', 'Remove')">
                 <BookmarkMinus class="w-4 h-4 text-white" />
               </button>
             </div>

@@ -218,7 +218,7 @@ const closeModal = () => { isModalOpen.value = false; selectedSeries.value = nul
       <!-- ระบบค้นหาและตัวกรอง -->
       <section class="relative z-10 px-6 md:px-12 pb-20 pt-10">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <h2 class="text-2xl font-bold text-white border-l-4 border-[#00e054] pl-3">{{ t('ยอดนิยม (GL)', 'Trending (GL)') }}</h2>
+          <h2 class="text-2xl font-bold text-white border-l-4 border-[#00e054] pl-3">{{ t('ยอดนิยม (BL)', 'Trending (BL)') }}</h2>
           <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <div class="flex overflow-x-auto hide-scrollbar gap-2 pb-2 sm:pb-0">
               <button @click="selectedGenre = ''" :class="['px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors', selectedGenre === '' ? 'bg-[#00e054] text-black' : 'bg-white/10 text-gray-300 hover:bg-white/20']">{{ t('ทั้งหมด', 'All') }}</button>

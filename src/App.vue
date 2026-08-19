@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { 
   User, LayoutDashboard, Film, ListVideo, FileText, Users, UserPlus, LogOut, Menu, X, Globe, Wrench 
@@ -50,12 +50,36 @@ const checkSystemAndUser = async () => {
   }
 }
 
+// --- ระบบกันคลิกขวา และ กันก๊อปปี้ สำหรับหน้าบ้าน ---
+const preventCopyAndRightClick = (e) => {
+  // ถ้าเป็น Admin หรืออยู่ในหน้า Admin ให้ข้ามไป (ปล่อยให้ก๊อปปี้และคลิกขวาได้ปกติ)
+  if (isAdmin.value || isAdminRoute.value) return;
+  
+  // อนุญาตให้คลิกขวา/ก๊อปปี้ได้ เฉพาะในช่องที่ต้องพิมพ์ข้อความ (Input, Textarea)
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+  
+  e.preventDefault(); // บล็อกการกระทำนั้นๆ
+}
+
 onMounted(() => {
   checkSystemAndUser()
 
   supabase.auth.onAuthStateChange((_event, session) => {
     checkSystemAndUser()
   })
+
+  // เปิดใช้งานระบบป้องกันการก๊อปปี้/คลิกขวา ทั่วทั้งโปรเจกต์
+  window.addEventListener('contextmenu', preventCopyAndRightClick);
+  window.addEventListener('copy', preventCopyAndRightClick);
+  window.addEventListener('cut', preventCopyAndRightClick);
+})
+
+onUnmounted(() => {
+  // ถอดระบบออกเพื่อคืนค่าหน่วยความจำ
+  window.removeEventListener('contextmenu', preventCopyAndRightClick);
+  window.removeEventListener('copy', preventCopyAndRightClick);
+  window.removeEventListener('cut', preventCopyAndRightClick);
 })
 
 const handleLogout = async () => {
@@ -92,7 +116,8 @@ const toggleLang = () => {
     </button>
   </div>
 
-  <div v-else class="min-h-screen relative font-sans text-slate-100 bg-[#050505] flex">
+  <!-- เราใส่คลาส public-protect-select หากไม่ใช่ Admin เพื่อป้องกันการลากคลุมดำ -->
+  <div v-else :class="{'public-protect-select': !isAdminRoute && !isAdmin}" class="min-h-screen relative font-sans text-slate-100 bg-[#050505] flex">
     
     <!-- ================= PUBLIC NAVBAR ================= -->
     <header v-if="!isAdminRoute" class="fixed top-0 left-0 w-full z-50 glass-nav h-20 flex items-center transition-all duration-300">
@@ -120,7 +145,7 @@ const toggleLang = () => {
 
           <template v-if="currentUser">
             <div class="flex items-center gap-3">
-              <RouterLink v-if="isAdmin" to="/admin/dashboard" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-full font-medium transition-all text-sm shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+              <RouterLink v-if="isAdmin" to="/admin/dashboard" class="hidden sm:flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-full font-medium transition-all text-sm shadow-[0_0_10px_rgba(16,185,129,0.3)]">
                 <LayoutDashboard class="w-4 h-4" />
                 <span class="hidden sm:inline">{{ t('จัดการหลังบ้าน', 'Admin Panel') }}</span>
               </RouterLink>
@@ -211,5 +236,13 @@ const toggleLang = () => {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* คลาสสำหรับป้องกันการลากคลุมดำตัวหนังสือ (ยกเว้นช่องกรอกข้อมูล) */
+.public-protect-select *:not(input):not(textarea) {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 </style>
